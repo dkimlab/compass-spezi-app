@@ -16,9 +16,10 @@ struct Welcome: View {
     
     var body: some View {
 
+        VStack {
             OnboardingView(
                 title: "Welcome!",
-                subtitle: "This app will help the COMPASS team collect data directly from your AppleWatch!",
+                subtitle: "This app will help the COMPASS team collect data from your AppleWatch.",
                 areas: [],
                 actionText: "Get Started",
                 action: {
@@ -27,7 +28,8 @@ struct Welcome: View {
             )
             
             .padding(.top, 24)
-        
+        }
+        .multilineTextAlignment(.center)
     }
 }
 

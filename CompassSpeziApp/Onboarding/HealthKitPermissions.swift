@@ -24,16 +24,16 @@ struct HealthKitPermissions: View {
                 VStack {
                     OnboardingTitleView(
                         title: "HealthKit Access",
-                        subtitle: "HEALTHKIT_PERMISSIONS_SUBTITLE"
+                        subtitle: "Pressing allow on the following question will allow the COMPASS team to access your AppleWatch data."
                     )
                     Spacer()
                     Image(systemName: "heart.text.square.fill")
                         .font(.system(size: 150))
                         .foregroundColor(.accentColor)
                         .accessibilityHidden(true)
-                    Text("HEALTHKIT_PERMISSIONS_DESCRIPTION")
-                        .multilineTextAlignment(.center)
-                        .padding(.vertical, 16)
+//                    Text("HEALTHKIT_PERMISSIONS_DESCRIPTION")
+//                        .multilineTextAlignment(.center)
+//                        .padding(.vertical, 16)
                     Spacer()
                 }
             }, actionView: {

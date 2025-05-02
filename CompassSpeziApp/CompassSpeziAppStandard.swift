@@ -19,22 +19,77 @@ import SpeziHealthKit
 import SpeziOnboarding
 import SpeziQuestionnaire
 import SwiftUI
+import FirebaseAuth
 
 
 actor CompassSpeziAppStandard: Standard,
                                    EnvironmentAccessible,
                                    HealthKitConstraint,
                                    ConsentConstraint,
-                                   AccountNotifyConstraint {
-    func handleNewSamples<Sample>(_ addedSamples: some Collection, ofType
-    sampleType: SpeziHealthKit.SampleType<Sample>) async where Sample :
-    SpeziHealthKit._HKSampleWithSampleType {
-    
+                               AccountNotifyConstraint {
+    func handleNewSamples<Sample>(_ addedSamples: some Collection,
+                                  ofType sampleType: SpeziHealthKit.SampleType<Sample>) async where Sample : SpeziHealthKit._HKSampleWithSampleType {
+            guard let userId = Auth.auth().currentUser?.uid else { return }
+            let db = Firestore.firestore()
+        
+        for sample in addedSamples {
+            if let quantitySample = sample as? HKQuantitySample {
+                let unit: HKUnit
+                let fieldName: String
+                let value: Double
+                
+                switch quantitySample.quantityType.identifier {
+                case HKQuantityTypeIdentifier.stepCount.rawValue:
+                    unit = .count()
+                    fieldName = "steps"
+                    value = quantitySample.quantity.doubleValue(for: unit)
+                case HKQuantityTypeIdentifier.heartRate.rawValue:
+                    unit = HKUnit.count().unitDivided(by: .minute())
+                    fieldName = "bpm"
+                    value = quantitySample.quantity.doubleValue(for: unit)
+                case HKQuantityTypeIdentifier.oxygenSaturation.rawValue:
+                    unit = .percent()
+                    fieldName = "oxygen"
+                    value = quantitySample.quantity.doubleValue(for: unit) * 100.0
+                default:
+                    continue
+                }
+                
+                let data: [String: Any] = [
+                    "type": fieldName,
+                    "value": value,
+                    "timestamp": quantitySample.endDate
+                ]
+                
+                let collectionName: String
+                
+                switch quantitySample.quantityType.identifier {
+                case HKQuantityTypeIdentifier.stepCount.rawValue:
+                    collectionName = "stepCountSamples"
+                case HKQuantityTypeIdentifier.heartRate.rawValue:
+                    collectionName = "heartRateSamples"
+                case HKQuantityTypeIdentifier.oxygenSaturation.rawValue:
+                    collectionName = "bloodOxygenSamples"
+                default:
+                    collectionName = "otherSamples" // fallback or skip
+                }
+                
+                do {
+                    try await db.collection("users")
+                        .document(userId)
+                        .collection(collectionName)
+                        .addDocument(data: data)
+                } catch {
+                    print("Failed to upload \(collectionName) data: \(error)")
+                }
+            }
+        }
     }
     
+    
     func handleDeletedObjects<Sample>(_ deletedObjects: some
-    Collection<HKDeletedObject>, ofType sampleType: SpeziHealthKit.SampleType<Sample>)
-    async where Sample : SpeziHealthKit._HKSampleWithSampleType {
+                                      Collection<HKDeletedObject>, ofType sampleType: SpeziHealthKit.SampleType<Sample>)
+                                      async where Sample : SpeziHealthKit._HKSampleWithSampleType {
        
     }
     

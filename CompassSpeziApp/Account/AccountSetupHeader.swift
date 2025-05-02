@@ -22,12 +22,10 @@ struct AccountSetupHeader: View {
                 .bold()
                 .padding(.bottom)
                 .padding(.top, 30)
-            Text("ACCOUNT_SUBTITLE")
+            Text("The COMPASS team will help you get started.")
                 .padding(.bottom, 8)
             if account.signedIn, case .presentingExistingAccount = setupState {
                 Text("ACCOUNT_SIGNED_IN_DESCRIPTION")
-            } else {
-                Text("ACCOUNT_SETUP_DESCRIPTION")
             }
         }
             .multilineTextAlignment(.center)

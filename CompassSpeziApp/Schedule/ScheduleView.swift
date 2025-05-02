@@ -22,26 +22,50 @@ struct ScheduleView: View {
 
     
     var body: some View {
-        @Bindable var scheduler = scheduler
+//        @Bindable var scheduler = scheduler
 
+//        NavigationStack {
+//            VStack (spacing: 12){
+//                Text ("You're all set!")
+//                    .font(.largeTitle)
+//                Text ("Please contact the COMPASS team with any questions")
+//                    .font(.subheadline)
+//            }
+////            TodayList { event in
+////                InstructionsTile(event) {
+////                    EventActionButton(event: event, "Start Questionnaire") {
+////                        presentedEvent = event
+////                    }
+////                }
+////            }
+//            .frame(maxWidth: .infinity, maxHeight: .infinity)
+//            .navigationTitle("You're all set!")
+////                .viewStateAlert(state: $scheduler.viewState)
+////                .sheet(item: $presentedEvent) { event in
+////                    EventView(event)
+////                }
+//                .toolbar {
+//                    if account != nil {
+//                        AccountButton(isPresented: $presentingAccount)
+//                    }
+////                }
+//        }
         NavigationStack {
-            TodayList { event in
-                InstructionsTile(event) {
-                    EventActionButton(event: event, "Start Questionnaire") {
-                        presentedEvent = event
-                    }
+            VStack(spacing: 12) {
+                Text("You're all set!")
+                    .font(.largeTitle)
+                    .multilineTextAlignment(.center)
+
+                Text("Check back later for upcoming tasks.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .toolbar {
+                if account != nil {
+                    AccountButton(isPresented: $presentingAccount)
                 }
             }
-                .navigationTitle("Schedule")
-                .viewStateAlert(state: $scheduler.viewState)
-                .sheet(item: $presentedEvent) { event in
-                    EventView(event)
-                }
-                .toolbar {
-                    if account != nil {
-                        AccountButton(isPresented: $presentingAccount)
-                    }
-                }
         }
     }
     

@@ -40,7 +40,7 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
 
                 firestore
                 if FeatureFlags.useFirebaseEmulator {
-                    FirebaseStorageConfiguration(emulatorSettings: (host: "localhost", port: 9199))
+                    FirebaseStorageConfiguration(emulatorSettings: (host: "10.0.0.175", port: 9199)) /* TODO: fix the hardcoded IP */
                 } else {
                     FirebaseStorageConfiguration()
                 }
@@ -58,7 +58,7 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
 
     private var accountEmulator: (host: String, port: Int)? {
         if FeatureFlags.useFirebaseEmulator {
-            (host: "localhost", port: 9099)
+            (host: "10.0.0.175", port: 9099) /* TODO: fix the hardcoded IP */
         } else {
             nil
         }
@@ -68,7 +68,7 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
     private var firestore: Firestore {
         let settings = FirestoreSettings()
         if FeatureFlags.useFirebaseEmulator {
-            settings.host = "localhost:8080"
+            settings.host = "10.0.0.175:8080" /* TODO: fix the hardcoded IP */
             settings.cacheSettings = MemoryCacheSettings()
             settings.isSSLEnabled = false
         }
@@ -81,8 +81,13 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
     
     private var healthKit: HealthKit {
         HealthKit {
-            CollectSample(.stepCount)
-            CollectSample(.heartRate)
+            CollectSample(.stepCount, continueInBackground: true)
+            CollectSample(.heartRate, continueInBackground: true)
+            CollectSample(.bloodOxygen, continueInBackground: true)
+            
+            // TODO: exercise, sleep metrics, anything to do with activity and vital signs, sleep, activity, O2, heart rate, resp rate (activity, vital signs, mobility, mindfulness & sleep)
+//            CollectSample(HKObjectType.workoutType(), continueInBackground: true)
+            RequestReadAccess(quantity: [.stepCount, .heartRate, .bloodOxygen])
         }
     }
 }

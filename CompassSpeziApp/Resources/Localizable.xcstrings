@@ -2,6 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "ACCOUNT_SETUP_DESCRIPTION" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -46,6 +47,7 @@
       }
     },
     "ACCOUNT_SUBTITLE" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -89,6 +91,9 @@
         }
       }
     },
+    "Check back later for upcoming tasks." : {
+
+    },
     "Close" : {
       "localizations" : {
         "de" : {
@@ -107,6 +112,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stäng"
+          }
+        }
+      }
+    },
+    "CompassSpeziApp" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spezi\nCompassSpeziApp"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spezi\nCompassSpeziApp"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spezi applikationsmall"
           }
         }
       }
@@ -177,6 +205,9 @@
         }
       }
     },
+    "Get Started" : {
+
+    },
     "Grant Access" : {
       "localizations" : {
         "de" : {
@@ -244,6 +275,7 @@
       }
     },
     "HEALTHKIT_PERMISSIONS_DESCRIPTION" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -266,6 +298,7 @@
       }
     },
     "HEALTHKIT_PERMISSIONS_SUBTITLE" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -442,6 +475,7 @@
       }
     },
     "Learn More" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -596,6 +630,7 @@
       }
     },
     "Please fill out the Social Support Questionnaire every day." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -616,6 +651,9 @@
           }
         }
       }
+    },
+    "Pressing allow on the following question will allow the COMPASS team to access your AppleWatch data." : {
+
     },
     "Schedule" : {
       "localizations" : {
@@ -640,6 +678,7 @@
       }
     },
     "Social Support Questionnaire" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -662,6 +701,7 @@
       }
     },
     "Spezi Modules" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -705,29 +745,8 @@
         }
       }
     },
-    "CompassSpeziApp" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spezi\nCompassSpeziApp"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spezi\nCompassSpeziApp"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spezi applikationsmall"
-          }
-        }
-      }
-    },
     "Start Questionnaire" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -750,6 +769,7 @@
       }
     },
     "Swift Package Manager" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -771,7 +791,11 @@
         }
       }
     },
+    "The COMPASS team will help you get started." : {
+
+    },
     "The Spezi Framework" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -792,6 +816,9 @@
           }
         }
       }
+    },
+    "This app will help the COMPASS team collect data from your AppleWatch." : {
+
     },
     "This type of event is currently unsupported. Please contact the developer of this app." : {
       "localizations" : {
@@ -838,6 +865,7 @@
       }
     },
     "WELCOME_AREA1_DESCRIPTION" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -860,6 +888,7 @@
       }
     },
     "WELCOME_AREA2_DESCRIPTION" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -882,6 +911,7 @@
       }
     },
     "WELCOME_AREA3_DESCRIPTION" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -904,6 +934,7 @@
       }
     },
     "WELCOME_SUBTITLE" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -924,6 +955,12 @@
           }
         }
       }
+    },
+    "Welcome!" : {
+
+    },
+    "You're all set!" : {
+
     },
     "Your Account" : {
       "localizations" : {

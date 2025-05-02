@@ -38,23 +38,22 @@ struct OnboardingFlow: View {
     var body: some View {
         OnboardingStack(onboardingFlowComplete: $completedOnboardingFlow) {
             Welcome()
-//            InterestingModules()
             
             if !FeatureFlags.disableFirebase {
                 AccountOnboarding()
             }
             
-            #if !(targetEnvironment(simulator) && (arch(i386) || arch(x86_64)))
-                Consent()
-            #endif
+//            #if !(targetEnvironment(simulator) && (arch(i386) || arch(x86_64)))
+//                Consent()
+//            #endif
             
             if HKHealthStore.isHealthDataAvailable() && !healthKitAuthorization {
                 HealthKitPermissions()
             }
             
-            if !localNotificationAuthorization {
-                NotificationPermissions()
-            }
+//            if !localNotificationAuthorization {
+//                NotificationPermissions()
+//            }
         }
             .interactiveDismissDisabled(!completedOnboardingFlow)
             .onChange(of: scenePhase, initial: true) {
