@@ -8,6 +8,7 @@
 
 @preconcurrency import FirebaseFirestore
 @preconcurrency import FirebaseStorage
+import FirebaseAuth
 import HealthKitOnFHIR
 import OSLog
 @preconcurrency import PDFKit.PDFDocument
@@ -19,7 +20,6 @@ import SpeziHealthKit
 import SpeziOnboarding
 import SpeziQuestionnaire
 import SwiftUI
-import FirebaseAuth
 
 
 actor CompassSpeziAppStandard: Standard,

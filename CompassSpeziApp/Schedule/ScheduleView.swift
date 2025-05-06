@@ -56,9 +56,10 @@ struct ScheduleView: View {
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
 
-                Text("Check back later for upcoming tasks.")
+                Text("Please contact the COMPASS team \n with any questions.")
                     .font(.body)
                     .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .toolbar {

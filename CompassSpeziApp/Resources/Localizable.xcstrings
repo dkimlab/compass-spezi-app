@@ -91,9 +91,6 @@
         }
       }
     },
-    "Check back later for upcoming tasks." : {
-
-    },
     "Close" : {
       "localizations" : {
         "de" : {
@@ -628,6 +625,9 @@
           }
         }
       }
+    },
+    "Please contact the COMPASS team \n with any questions." : {
+
     },
     "Please fill out the Social Support Questionnaire every day." : {
       "extractionState" : "stale",

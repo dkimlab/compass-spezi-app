@@ -29,10 +29,10 @@ struct HomeView: View {
                 ScheduleView(presentingAccount: $presentingAccount)
             }
                 .customizationID("home.schedule")
-            Tab("Contacts", systemImage: "person.fill", value: .contact) {
-                Contacts(presentingAccount: $presentingAccount)
-            }
-                .customizationID("home.contacts")
+//            Tab("Contacts", systemImage: "person.fill", value: .contact) {
+//                Contacts(presentingAccount: $presentingAccount)
+//            }
+//                .customizationID("home.contacts")
         }
             .tabViewStyle(.sidebarAdaptable)
             .tabViewCustomization($tabViewCustomization)

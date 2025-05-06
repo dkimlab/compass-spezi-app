@@ -26,7 +26,7 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
         Configuration(standard: CompassSpeziAppStandard()) {
             if !FeatureFlags.disableFirebase {
                 AccountConfiguration(
-                    service: FirebaseAccountService(providers: [.emailAndPassword, .signInWithApple], emulatorSettings: accountEmulator),
+                    service: FirebaseAccountService(providers: [.emailAndPassword], emulatorSettings: accountEmulator),
                     storageProvider: FirestoreAccountStorage(storeIn: FirebaseConfiguration.userCollection),
                     configuration: [
                         .requires(\.userId),
@@ -78,16 +78,130 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
         )
     }
     
-    
     private var healthKit: HealthKit {
         HealthKit {
-            CollectSample(.stepCount, continueInBackground: true)
-            CollectSample(.heartRate, continueInBackground: true)
-            CollectSample(.bloodOxygen, continueInBackground: true)
+            let exercise = configureExerciseMetrics()
+            let wheelChair = configureWheelChairMetrics()
+            let activity = configureActivityMetrics()
+            let vitals = configureVitalSigns()
+            let sleep = configureSleepMetrics()
+            let mobility = configureMobilityMetrics()
+            let readAccess = configureReadAccess()
             
-            // TODO: exercise, sleep metrics, anything to do with activity and vital signs, sleep, activity, O2, heart rate, resp rate (activity, vital signs, mobility, mindfulness & sleep)
-//            CollectSample(HKObjectType.workoutType(), continueInBackground: true)
-            RequestReadAccess(quantity: [.stepCount, .heartRate, .bloodOxygen])
+            return exercise + wheelChair + activity + vitals + sleep + mobility + [readAccess]
         }
     }
+    
+    
+
+    
+    private func configureExerciseMetrics() -> [any HealthKitConfigurationComponent] {
+        // Exercise Metrics
+        return [
+            CollectSample(.stepCount, continueInBackground: true),
+            CollectSample(.distanceWalkingRunning, continueInBackground: true),
+            CollectSample(.runningSpeed, continueInBackground: true),
+            CollectSample(.runningStrideLength, continueInBackground: true),
+            CollectSample(.runningPower, continueInBackground: true),
+            CollectSample(.runningGroundContactTime, continueInBackground: true),
+            CollectSample(.runningVerticalOscillation, continueInBackground: true),
+            CollectSample(.distanceCycling, continueInBackground: true)
+        ]
+    }
+    
+    private func configureWheelChairMetrics() -> [any HealthKitConfigurationComponent]  {
+        // Wheelchair & Sports
+        return [
+            CollectSample(.pushCount, continueInBackground: true),
+            CollectSample(.distanceWheelchair, continueInBackground: true),
+            CollectSample(.swimmingStrokeCount, continueInBackground: true),
+            CollectSample(.distanceSwimming, continueInBackground: true),
+            CollectSample(.distanceDownhillSnowSports, continueInBackground: true)
+        ]
+    }
+    
+    private func configureActivityMetrics() -> [any HealthKitConfigurationComponent] {
+        // Activity & Energy
+        return [
+            CollectSample(.basalEnergyBurned, continueInBackground: true),
+            CollectSample(.activeEnergyBurned, continueInBackground: true),
+            CollectSample(.flightsClimbed, continueInBackground: true),
+            CollectSample(.appleExerciseTime, continueInBackground: true),
+            CollectSample(.appleMoveTime, continueInBackground: true),
+            CollectSample(.appleStandHour, continueInBackground: true),
+            CollectSample(.appleStandTime, continueInBackground: true),
+            CollectSample(.vo2Max, continueInBackground: true),
+            CollectSample(.lowCardioFitnessEvent, continueInBackground: true)
+        ]
+    }
+    
+    private func configureVitalSigns() -> [any HealthKitConfigurationComponent]  {
+        // Vital Signs
+        return [
+            CollectSample(.heartRate, continueInBackground: true),
+            CollectSample(.lowHeartRateEvent, continueInBackground: true),
+            CollectSample(.highHeartRateEvent, continueInBackground: true),
+            CollectSample(.irregularHeartRhythmEvent, continueInBackground: true),
+            CollectSample(.restingHeartRate, continueInBackground: true),
+            CollectSample(.heartRateVariabilitySDNN, continueInBackground: true),
+            CollectSample(.heartRateRecoveryOneMinute, continueInBackground: true),
+            CollectSample(.atrialFibrillationBurden, continueInBackground: true),
+            CollectSample(.walkingHeartRateAverage, continueInBackground: true),
+            CollectSample(.bloodOxygen, continueInBackground: true),
+            CollectSample(.bodyTemperature, continueInBackground: true),
+            CollectSample(.bloodPressureSystolic, continueInBackground: true),
+            CollectSample(.bloodPressureDiastolic, continueInBackground: true),
+            CollectSample(.respiratoryRate, continueInBackground: true)
+        ]
+    }
+    
+    private func configureSleepMetrics() -> [any HealthKitConfigurationComponent] {
+        // Sleep
+        return [
+            CollectSample(.sleepAnalysis, continueInBackground: true),
+            CollectSample(.appleSleepingWristTemperature, continueInBackground: true),
+            CollectSample(.appleSleepingBreathingDisturbances, continueInBackground: true)
+        ]
+    }
+    
+    private func configureMobilityMetrics() -> [any HealthKitConfigurationComponent]  {
+        // Mobility
+        return [
+            CollectSample(.appleWalkingSteadiness, continueInBackground: true),
+            CollectSample(.appleWalkingSteadinessEvent, continueInBackground: true),
+            CollectSample(.sixMinuteWalkTestDistance, continueInBackground: true),
+            CollectSample(.walkingSpeed, continueInBackground: true),
+            CollectSample(.walkingStepLength, continueInBackground: true),
+            CollectSample(.walkingAsymmetryPercentage, continueInBackground: true),
+            CollectSample(.walkingDoubleSupportPercentage, continueInBackground: true),
+            CollectSample(.stairAscentSpeed, continueInBackground: true),
+            CollectSample(.stairDescentSpeed, continueInBackground: true)
+        ]
+    }
+    
+    private func configureReadAccess() -> any HealthKitConfigurationComponent {
+        // Read Access
+        return RequestReadAccess(
+            quantity: [
+                .stepCount, .distanceWalkingRunning, .runningSpeed, .runningStrideLength,
+                .runningPower, .runningGroundContactTime, .runningVerticalOscillation, .distanceCycling,
+                .pushCount, .distanceWheelchair, .swimmingStrokeCount, .distanceSwimming,
+                .distanceDownhillSnowSports, .basalEnergyBurned, .activeEnergyBurned, .flightsClimbed,
+                .appleExerciseTime, .appleMoveTime, .appleStandTime, .vo2Max, .heartRate,
+                .restingHeartRate, .heartRateVariabilitySDNN, .heartRateRecoveryOneMinute,
+                .atrialFibrillationBurden, .walkingHeartRateAverage, .bloodOxygen, .bodyTemperature,
+                .bloodPressureSystolic, .bloodPressureDiastolic, .respiratoryRate,
+                .appleSleepingWristTemperature, .appleSleepingBreathingDisturbances,
+                .appleWalkingSteadiness, .sixMinuteWalkTestDistance, .walkingSpeed,
+                .walkingStepLength, .walkingAsymmetryPercentage, .walkingDoubleSupportPercentage,
+                .stairAscentSpeed, .stairDescentSpeed
+            ],
+            category: [
+                .appleStandHour, .lowCardioFitnessEvent, .lowHeartRateEvent, .highHeartRateEvent,
+                .irregularHeartRhythmEvent, .sleepAnalysis, .appleWalkingSteadinessEvent
+            ]
+        )
+    }
+    
+   
 }
