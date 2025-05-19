@@ -49,6 +49,7 @@ final class FirebaseConfiguration: Module, DefaultInitializable, @unchecked Send
     @Dependency(FirebaseAccountService.self) private var accountService: FirebaseAccountService?
 
     init() {}
+    
 
     func userDocumentReference(for accountId: String) -> DocumentReference {
         Self.userCollection.document(accountId)

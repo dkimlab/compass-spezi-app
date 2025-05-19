@@ -21,6 +21,11 @@ import SpeziOnboarding
 import SpeziQuestionnaire
 import SwiftUI
 
+struct SampleInfo {
+    let unit: HKUnit
+        let fieldName: String
+        let collectionName: String
+}
 
 actor CompassSpeziAppStandard: Standard,
                                    EnvironmentAccessible,
@@ -29,63 +34,189 @@ actor CompassSpeziAppStandard: Standard,
                                AccountNotifyConstraint {
     func handleNewSamples<Sample>(_ addedSamples: some Collection,
                                   ofType sampleType: SpeziHealthKit.SampleType<Sample>) async where Sample : SpeziHealthKit._HKSampleWithSampleType {
-            guard let userId = Auth.auth().currentUser?.uid else { return }
-            let db = Firestore.firestore()
-        
+        guard let userId = Auth.auth().currentUser?.uid else {
+            return
+        }
+        let db = Firestore.firestore()
+        let sampleInfo = sampleInfoDictionary()
+
         for sample in addedSamples {
-            if let quantitySample = sample as? HKQuantitySample {
-                let unit: HKUnit
-                let fieldName: String
-                let value: Double
-                
-                switch quantitySample.quantityType.identifier {
-                case HKQuantityTypeIdentifier.stepCount.rawValue:
-                    unit = .count()
-                    fieldName = "steps"
-                    value = quantitySample.quantity.doubleValue(for: unit)
-                case HKQuantityTypeIdentifier.heartRate.rawValue:
-                    unit = HKUnit.count().unitDivided(by: .minute())
-                    fieldName = "bpm"
-                    value = quantitySample.quantity.doubleValue(for: unit)
-                case HKQuantityTypeIdentifier.oxygenSaturation.rawValue:
-                    unit = .percent()
-                    fieldName = "oxygen"
-                    value = quantitySample.quantity.doubleValue(for: unit) * 100.0
-                default:
-                    continue
-                }
-                
-                let data: [String: Any] = [
-                    "type": fieldName,
-                    "value": value,
-                    "timestamp": quantitySample.endDate
-                ]
-                
-                let collectionName: String
-                
-                switch quantitySample.quantityType.identifier {
-                case HKQuantityTypeIdentifier.stepCount.rawValue:
-                    collectionName = "stepCountSamples"
-                case HKQuantityTypeIdentifier.heartRate.rawValue:
-                    collectionName = "heartRateSamples"
-                case HKQuantityTypeIdentifier.oxygenSaturation.rawValue:
-                    collectionName = "bloodOxygenSamples"
-                default:
-                    collectionName = "otherSamples" // fallback or skip
-                }
+            if let quantitySample = sample as? HKQuantitySample,
+                let sampleData = sampleInfo[quantitySample.quantityType.identifier] {
+                            let value = quantitySample.quantity.doubleValue(for: sampleData.unit)
+                            let data: [String: Any] = [
+                                "type": sampleData.fieldName,
+                                "value": sampleType.id == HKQuantityTypeIdentifier.oxygenSaturation.rawValue ? value * 100.0 : value,
+                                //TODO: also account for mobility percentages
+                                "timestamp": quantitySample.endDate
+                            ]
                 
                 do {
                     try await db.collection("users")
                         .document(userId)
-                        .collection(collectionName)
+                        .collection(sampleData.collectionName)
                         .addDocument(data: data)
                 } catch {
-                    print("Failed to upload \(collectionName) data: \(error)")
+                    print("Failed to upload \(sampleData.collectionName) data: \(error)")
                 }
             }
         }
     }
     
+    // Helper function to return the sampleInfo dictionary
+    func sampleInfoDictionary() -> [String: SampleInfo] {
+        return exerciseMetricsInfo()
+//                .merging(exerciseMetricsInfo(), uniquingKeysWith: { $1 })
+                .merging(wheelChairMetricsInfo(), uniquingKeysWith: { $1 })
+                .merging(activityMetricsInfo(), uniquingKeysWith: { $1 })
+                .merging(vitalSignsInfo(), uniquingKeysWith: { $1 })
+//                .merging(sleepMetricsInfo(), uniquingKeysWith: { $1 })
+//                .merging(mobilityMetricsInfo(), uniquingKeysWith: { $1 })
+    }
+    
+    func exerciseMetricsInfo() -> [String: SampleInfo] {
+        return [
+            HKQuantityTypeIdentifier.stepCount.rawValue: SampleInfo(unit: .count(), fieldName: "steps", collectionName: "stepCountSamples"),
+            HKQuantityTypeIdentifier.distanceWalkingRunning.rawValue: SampleInfo(
+                unit: .mile(), fieldName: "miles", collectionName: "distanceWalkingRunningSamples"),
+            HKQuantityTypeIdentifier.runningSpeed.rawValue: SampleInfo(
+                unit: .mile().unitDivided(by: .hour()), fieldName: "runningSpeed", collectionName: "runningSpeedSamples"),
+            HKQuantityTypeIdentifier.runningStrideLength.rawValue: SampleInfo(
+                unit: .meter(), fieldName: "strideLength", collectionName: "runningStrideLengthSamples"),
+            HKQuantityTypeIdentifier.runningPower.rawValue: SampleInfo(unit: .watt(), fieldName: "power", collectionName: "runningPowerSamples"),
+            HKQuantityTypeIdentifier.runningGroundContactTime.rawValue: SampleInfo(
+                unit: .second(), fieldName: "contactTime", collectionName: "runningGroundContactTimeSamples"),
+            HKQuantityTypeIdentifier.runningVerticalOscillation.rawValue: SampleInfo(
+                unit: .meter().unitDivided(by: HKUnit(from: "cm")), fieldName: "verticalOscillation",
+                collectionName: "runningVerticalOscillationSamples"),//TODO: confirm correct units
+            HKQuantityTypeIdentifier.distanceCycling.rawValue: SampleInfo(
+                unit: .mile(), fieldName: "cyclingDistance", collectionName: "distanceCyclingSamples")
+        ]
+    }
+    
+    func wheelChairMetricsInfo() -> [String: SampleInfo] {
+        return [
+            HKQuantityTypeIdentifier.pushCount.rawValue: SampleInfo(
+                unit: .count(), fieldName: "pushCount", collectionName: "pushCountSamples"),
+            HKQuantityTypeIdentifier.distanceWheelchair.rawValue: SampleInfo(
+                unit: .mile(), fieldName: "wheelchairDistance", collectionName: "distanceWheelchairSamples")
+        ]
+    }
+    
+    func activityMetricsInfo() -> [String: SampleInfo] {
+        return [
+            HKQuantityTypeIdentifier.swimmingStrokeCount.rawValue: SampleInfo(
+                unit: .count(), fieldName: "swimmingStrokes", collectionName: "swimmingStrokeCountSamples"),
+            HKQuantityTypeIdentifier.distanceSwimming.rawValue: SampleInfo(
+                unit: .mile(), fieldName: "swimmingDistance", collectionName: "distanceSwimmingSamples"),
+            HKQuantityTypeIdentifier.distanceDownhillSnowSports.rawValue: SampleInfo(
+                unit: .mile(), fieldName: "snowSportsDistance", collectionName: "distanceDownhillSnowSportsSamples"),
+            HKQuantityTypeIdentifier.basalEnergyBurned.rawValue: SampleInfo(
+                unit: .kilocalorie(), fieldName: "basalEnergy", collectionName: "basalEnergyBurnedSamples"),
+            HKQuantityTypeIdentifier.activeEnergyBurned.rawValue: SampleInfo(
+                unit: .kilocalorie(), fieldName: "activeEnergy", collectionName: "activeEnergyBurnedSamples"),
+            HKQuantityTypeIdentifier.flightsClimbed.rawValue: SampleInfo(
+                unit: .count(), fieldName: "flights", collectionName: "flightsClimbedSamples"),
+            HKQuantityTypeIdentifier.appleExerciseTime.rawValue: SampleInfo(
+                unit: .minute(), fieldName: "exerciseTime", collectionName: "appleExerciseTimeSamples"),
+            HKQuantityTypeIdentifier.appleMoveTime.rawValue: SampleInfo(
+                unit: .minute(), fieldName: "moveTime", collectionName: "appleMoveTimeSamples"),
+            //                   HKQuantityTypeIdentifier.appleStandHour.rawValue: (.count(), "standHours", "appleStandHourSamples"),//TODO: handle as category type
+            HKQuantityTypeIdentifier.appleStandTime.rawValue: SampleInfo(
+                unit: .minute(),
+                fieldName: "appleStandTime",
+                collectionName: "appleStandTimeSamples"),
+            HKQuantityTypeIdentifier.vo2Max.rawValue: SampleInfo(
+                unit: HKUnit.liter().unitDivided(by: HKUnit.gram()).unitDivided(
+                    by: HKUnit.minute()).unitMultiplied(by: HKUnit(from: "mL")).unitMultiplied(by: HKUnit(from: "mL")),
+                fieldName: "vo2Max", collectionName: "vo2MaxSamples"),//TODO: confirm correct units
+            //                   HKQuantityTypeIdentifier.lowCardioFitnessEvent.rawValue: (.count(), "lowCardioFitness", "lowCardioFitnessEventSamples"), //TODO: handle as category type
+        ]
+    }
+    
+    func vitalSignsInfo() -> [String: SampleInfo] {
+        return [
+            HKQuantityTypeIdentifier.heartRate.rawValue: SampleInfo(
+                unit: HKUnit.count().unitDivided(by: .minute()), fieldName: "bpm", collectionName: "heartRateSamples"),
+            // TODO: add lowHeartRateEvent category type
+            // TODO: add highHeartRateEvent category type
+            // TODO: add irregularHeartRateEvent category type
+            HKQuantityTypeIdentifier.restingHeartRate.rawValue: SampleInfo(
+                unit: HKUnit.count().unitDivided(by: .minute()), fieldName: "restingBpm", collectionName: "restingHeartRateSamples"),
+//            HKQuantityTypeIdentifier.heartRateVariabilitySDNN.rawValue: SampleInfo(
+//                unit: .second().unitDivided(by: HKUnit(from: "milli")),
+//                fieldName: "HRV_SDNN", collectionName: "heartRateVariabilitySDNNSamples"), //TODO: confirm correct units
+            HKQuantityTypeIdentifier.heartRateRecoveryOneMinute.rawValue: SampleInfo(
+                unit: HKUnit.count().unitDivided(by: .minute()),
+                fieldName: "heartRateRecoveryOneMinute",
+                collectionName: "heartRateRecoveryOneMinuteSamples"),
+            // TODO: add atrialFibrillationBurden category type
+            HKQuantityTypeIdentifier.walkingHeartRateAverage.rawValue: SampleInfo(
+                unit: HKUnit.count().unitDivided(by: .minute()), fieldName: "walkingHeartRate", collectionName: "walkingHeartRateSamples"),
+            HKQuantityTypeIdentifier.oxygenSaturation.rawValue: SampleInfo(
+                unit: .percent(), fieldName: "oxygen", collectionName: "bloodOxygenSamples"),
+            HKQuantityTypeIdentifier.bodyTemperature.rawValue: SampleInfo(
+                unit: .degreeCelsius(), fieldName: "bodyTemp", collectionName: "bodyTemperatureSamples"),
+            HKQuantityTypeIdentifier.bloodPressureSystolic.rawValue: SampleInfo(
+                unit: .millimeterOfMercury(), fieldName: "systolicBloodPressure", collectionName: "bloodPressureSystolicSamples"),
+            HKQuantityTypeIdentifier.bloodPressureDiastolic.rawValue: SampleInfo(
+                unit: .millimeterOfMercury(), fieldName: "diastolicBloodPressure", collectionName: "bloodPressureDiastolicSamples"),
+            HKQuantityTypeIdentifier.respiratoryRate.rawValue: SampleInfo(
+                unit: HKUnit.count().unitDivided(by: HKUnit.minute()),
+                fieldName: "respiratoryRate", collectionName: "respiratoryRateSamples") //TODO: confirm correct units
+        ]
+    }
+    
+    func sleepMetricsInfo() -> [String: SampleInfo] {
+        return [
+            //TODO: add sleepAnalysis category type
+            HKQuantityTypeIdentifier.appleSleepingWristTemperature.rawValue: SampleInfo(
+                unit: .degreeCelsius(),
+                fieldName: "appleSleepingWristTemperature",
+                collectionName: "appleSleepingWristTemperatureSamples"),
+            HKQuantityTypeIdentifier.appleSleepingBreathingDisturbances.rawValue: SampleInfo(
+                unit: .count(),
+                fieldName: "appleSleepingBreathingDisturbances",
+                collectionName: "appleSleepingBreathingDisturbancesSamples")
+        ]
+    }
+    
+    func mobilityMetricsInfo() -> [String: SampleInfo] {
+        return [
+            HKQuantityTypeIdentifier.appleWalkingSteadiness.rawValue: SampleInfo(
+                unit: .percent(),
+                fieldName: "appleWalkingSteadiness",
+                collectionName: "appleWalkingSteadinessSamples"),
+            
+            //TODO: add appleWalkingSteadinessEvent category type
+            HKQuantityTypeIdentifier.sixMinuteWalkTestDistance.rawValue: SampleInfo(
+                unit: .meter(),
+                fieldName: "sixMinuteWalkTestDistance",
+                collectionName: "sixMinuteWalkTestDistanceSamples"),
+            HKQuantityTypeIdentifier.walkingSpeed.rawValue: SampleInfo(
+                unit: .meter().unitDivided(by: .second()),
+                fieldName: "walkingSpeed",
+                collectionName: "walkingSpeedSamples"),
+            HKQuantityTypeIdentifier.walkingStepLength.rawValue: SampleInfo(
+                unit: .meter(),
+                fieldName: "walkingStepLength",
+                collectionName: "walkingStepLengthSamples"),
+            HKQuantityTypeIdentifier.walkingAsymmetryPercentage.rawValue: SampleInfo(
+                unit: .percent(),
+                fieldName: "walkingAsymmetryPercentage",
+                collectionName: "walkingAsymmetryPercentageSamples"),
+            HKQuantityTypeIdentifier.walkingDoubleSupportPercentage.rawValue: SampleInfo(
+                unit: .percent(),
+                fieldName: "walkingDoubleSupportPercentage",
+                collectionName: "walkingDoubleSupportPercentageSamples"),
+            HKQuantityTypeIdentifier.stairAscentSpeed.rawValue: SampleInfo(
+                unit: .meter().unitDivided(by: .second()),
+                fieldName: "stairAscentSpeed", collectionName: "stairAscentSpeedSamples"),
+            HKQuantityTypeIdentifier.stairDescentSpeed.rawValue: SampleInfo( unit: .meter().unitDivided(by: .second()),
+                                                                             fieldName: "stairDescentSpeed",
+                                                                             collectionName: "stairDescentSpeedSamples")
+        ]
+    }
     
     func handleDeletedObjects<Sample>(_ deletedObjects: some
                                       Collection<HKDeletedObject>, ofType sampleType: SpeziHealthKit.SampleType<Sample>)

@@ -31,10 +31,13 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
                     configuration: [
                         .requires(\.userId),
                         .requires(\.name),
-
+                        
+                        //                        .requires(\.accountId),
+                        
                         // additional values stored using the `FirestoreAccountStorage` within our Standard implementation
                         .collects(\.genderIdentity),
-                        .collects(\.dateOfBirth)
+                        .collects(\.dateOfBirth),
+//                        .collects(\.compassID) 
                     ]
                 )
 
@@ -47,7 +50,6 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
             }
 
             healthKit
-            
             CompassSpeziAppScheduler()
             Scheduler()
             OnboardingDataSource()
@@ -91,8 +93,6 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
             return exercise + wheelChair + activity + vitals + sleep + mobility + [readAccess]
         }
     }
-    
-    
 
     
     private func configureExerciseMetrics() -> [any HealthKitConfigurationComponent] {
@@ -109,20 +109,21 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
         ]
     }
     
-    private func configureWheelChairMetrics() -> [any HealthKitConfigurationComponent]  {
-        // Wheelchair & Sports
+    private func configureWheelChairMetrics() -> [any HealthKitConfigurationComponent] {
+        // Wheelchair
         return [
             CollectSample(.pushCount, continueInBackground: true),
             CollectSample(.distanceWheelchair, continueInBackground: true),
-            CollectSample(.swimmingStrokeCount, continueInBackground: true),
-            CollectSample(.distanceSwimming, continueInBackground: true),
-            CollectSample(.distanceDownhillSnowSports, continueInBackground: true)
+            
         ]
     }
     
     private func configureActivityMetrics() -> [any HealthKitConfigurationComponent] {
         // Activity & Energy
         return [
+            CollectSample(.swimmingStrokeCount, continueInBackground: true),
+            CollectSample(.distanceSwimming, continueInBackground: true),
+            CollectSample(.distanceDownhillSnowSports, continueInBackground: true),
             CollectSample(.basalEnergyBurned, continueInBackground: true),
             CollectSample(.activeEnergyBurned, continueInBackground: true),
             CollectSample(.flightsClimbed, continueInBackground: true),
@@ -135,7 +136,7 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
         ]
     }
     
-    private func configureVitalSigns() -> [any HealthKitConfigurationComponent]  {
+    private func configureVitalSigns() -> [any HealthKitConfigurationComponent] {
         // Vital Signs
         return [
             CollectSample(.heartRate, continueInBackground: true),
@@ -164,7 +165,7 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
         ]
     }
     
-    private func configureMobilityMetrics() -> [any HealthKitConfigurationComponent]  {
+    private func configureMobilityMetrics() -> [any HealthKitConfigurationComponent] {
         // Mobility
         return [
             CollectSample(.appleWalkingSteadiness, continueInBackground: true),
@@ -181,27 +182,49 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
     
     private func configureReadAccess() -> any HealthKitConfigurationComponent {
         // Read Access
-        return RequestReadAccess(
-            quantity: [
+        let quantityIdentifiers: [HKQuantityTypeIdentifier] = [
                 .stepCount, .distanceWalkingRunning, .runningSpeed, .runningStrideLength,
                 .runningPower, .runningGroundContactTime, .runningVerticalOscillation, .distanceCycling,
                 .pushCount, .distanceWheelchair, .swimmingStrokeCount, .distanceSwimming,
                 .distanceDownhillSnowSports, .basalEnergyBurned, .activeEnergyBurned, .flightsClimbed,
                 .appleExerciseTime, .appleMoveTime, .appleStandTime, .vo2Max, .heartRate,
                 .restingHeartRate, .heartRateVariabilitySDNN, .heartRateRecoveryOneMinute,
-                .atrialFibrillationBurden, .walkingHeartRateAverage, .bloodOxygen, .bodyTemperature,
+                .atrialFibrillationBurden, .walkingHeartRateAverage, .oxygenSaturation, .bodyTemperature,
                 .bloodPressureSystolic, .bloodPressureDiastolic, .respiratoryRate,
                 .appleSleepingWristTemperature, .appleSleepingBreathingDisturbances,
                 .appleWalkingSteadiness, .sixMinuteWalkTestDistance, .walkingSpeed,
                 .walkingStepLength, .walkingAsymmetryPercentage, .walkingDoubleSupportPercentage,
                 .stairAscentSpeed, .stairDescentSpeed
-            ],
-            category: [
+        ]
+        
+        let categoryIdentifiers: [HKCategoryTypeIdentifier] = [
                 .appleStandHour, .lowCardioFitnessEvent, .lowHeartRateEvent, .highHeartRateEvent,
                 .irregularHeartRhythmEvent, .sleepAnalysis, .appleWalkingSteadinessEvent
-            ]
-        )
+
+        ]
+        let quantityTypes: Set<SampleType<HKQuantitySample>> = Set(
+                quantityIdentifiers.compactMap { SampleType<HKQuantitySample>($0) }
+            )
+            
+            let categoryTypes: Set<SampleType<HKCategorySample>> = Set(
+                categoryIdentifiers.compactMap { SampleType<HKCategorySample>($0) }
+            )
+        
+        // Optionally enable background delivery here
+        let healthStore = HKHealthStore()
+        for sample in quantityTypes {
+            healthStore.enableBackgroundDelivery(for: sample.hkSampleType, frequency: .immediate) { success, error in
+                print("[HealthKit] \(sample.hkSampleType.identifier): \(success ? "✅ enabled" : "❌ failed") \(error?.localizedDescription ?? "")")
+            }
+        }
+
+        for sample in categoryTypes {
+            healthStore.enableBackgroundDelivery(for: sample.hkSampleType, frequency: .immediate) { success, error in
+                print("[HealthKit] \(sample.hkSampleType.identifier): \(success ? "✅ enabled" : "❌ failed") \(error?.localizedDescription ?? "")")
+            }
+        }
+
+            
+            return RequestReadAccess(quantity: quantityTypes, category: categoryTypes)
     }
-    
-   
 }
