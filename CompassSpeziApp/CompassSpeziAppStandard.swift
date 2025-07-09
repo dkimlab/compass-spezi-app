@@ -32,37 +32,6 @@ actor CompassSpeziAppStandard: Standard,
                                    HealthKitConstraint,
                                    ConsentConstraint,
                                AccountNotifyConstraint {
-    func handleNewSamples<Sample>(_ addedSamples: some Collection,
-                                  ofType sampleType: SpeziHealthKit.SampleType<Sample>) async where Sample : SpeziHealthKit._HKSampleWithSampleType {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            return
-        }
-        let db = Firestore.firestore()
-        let sampleInfo = sampleInfoDictionary()
-
-        for sample in addedSamples {
-            if let quantitySample = sample as? HKQuantitySample,
-                let sampleData = sampleInfo[quantitySample.quantityType.identifier] {
-                            let value = quantitySample.quantity.doubleValue(for: sampleData.unit)
-                            let data: [String: Any] = [
-                                "type": sampleData.fieldName,
-                                "value": sampleType.id == HKQuantityTypeIdentifier.oxygenSaturation.rawValue ? value * 100.0 : value,
-                                //TODO: also account for mobility percentages
-                                "timestamp": quantitySample.endDate
-                            ]
-                
-                do {
-                    try await db.collection("users")
-                        .document(userId)
-                        .collection(sampleData.collectionName)
-                        .addDocument(data: data)
-                } catch {
-                    print("Failed to upload \(sampleData.collectionName) data: \(error)")
-                }
-            }
-        }
-    }
-    
     // Helper function to return the sampleInfo dictionary
     func sampleInfoDictionary() -> [String: SampleInfo] {
         return exerciseMetricsInfo()
@@ -73,6 +42,39 @@ actor CompassSpeziAppStandard: Standard,
 //                .merging(sleepMetricsInfo(), uniquingKeysWith: { $1 })
 //                .merging(mobilityMetricsInfo(), uniquingKeysWith: { $1 })
     }
+    
+    func handleNewSamples<Sample>(_ addedSamples: some Collection,
+                                  ofType sampleType: SpeziHealthKit.SampleType<Sample>) async where Sample : SpeziHealthKit._HKSampleWithSampleType {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            return
+        }
+        let firestoneDatabase = Firestore.firestore()
+        let sampleInfo = sampleInfoDictionary()
+
+        for sample in addedSamples {
+            if let quantitySample = sample as? HKQuantitySample,
+                let sampleData = sampleInfo[quantitySample.quantityType.identifier] {
+                            let value = quantitySample.quantity.doubleValue(for: sampleData.unit)
+                            let data: [String: Any] = [
+                                "type": sampleData.fieldName,
+                                "value": sampleType.id == HKQuantityTypeIdentifier.oxygenSaturation.rawValue ? value : value,
+                                // TODO: also account for mobility percentages
+                                "timestamp": quantitySample.endDate
+                            ]
+                
+                do {
+                    try await firestoneDatabase.collection("users")
+                        .document(userId)
+                        .collection(sampleData.collectionName)
+                        .addDocument(data: data)
+                } catch {
+                    print("Failed to upload \(sampleData.collectionName) data: \(error)")
+                }
+            }
+        }
+    }
+    
+    
     
     func exerciseMetricsInfo() -> [String: SampleInfo] {
         return [
@@ -85,10 +87,10 @@ actor CompassSpeziAppStandard: Standard,
                 unit: .meter(), fieldName: "strideLength", collectionName: "runningStrideLengthSamples"),
             HKQuantityTypeIdentifier.runningPower.rawValue: SampleInfo(unit: .watt(), fieldName: "power", collectionName: "runningPowerSamples"),
             HKQuantityTypeIdentifier.runningGroundContactTime.rawValue: SampleInfo(
-                unit: .second(), fieldName: "contactTime", collectionName: "runningGroundContactTimeSamples"),
+                unit: HKUnit.secondUnit(with: .milli), fieldName: "contactTime", collectionName: "runningGroundContactTimeSamples"),
             HKQuantityTypeIdentifier.runningVerticalOscillation.rawValue: SampleInfo(
-                unit: .meter().unitDivided(by: HKUnit(from: "cm")), fieldName: "verticalOscillation",
-                collectionName: "runningVerticalOscillationSamples"),//TODO: confirm correct units
+                unit: HKUnit(from: "cm"), fieldName: "verticalOscillation",
+                collectionName: "runningVerticalOscillationSamples"),// TODO: confirm correct units
             HKQuantityTypeIdentifier.distanceCycling.rawValue: SampleInfo(
                 unit: .mile(), fieldName: "cyclingDistance", collectionName: "distanceCyclingSamples")
         ]
@@ -118,18 +120,17 @@ actor CompassSpeziAppStandard: Standard,
             HKQuantityTypeIdentifier.flightsClimbed.rawValue: SampleInfo(
                 unit: .count(), fieldName: "flights", collectionName: "flightsClimbedSamples"),
             HKQuantityTypeIdentifier.appleExerciseTime.rawValue: SampleInfo(
-                unit: .minute(), fieldName: "exerciseTime", collectionName: "appleExerciseTimeSamples"),
+                unit: .second(), fieldName: "exerciseTime", collectionName: "appleExerciseTimeSamples"),
             HKQuantityTypeIdentifier.appleMoveTime.rawValue: SampleInfo(
-                unit: .minute(), fieldName: "moveTime", collectionName: "appleMoveTimeSamples"),
+                unit: .second(), fieldName: "moveTime", collectionName: "appleMoveTimeSamples"),
             //                   HKQuantityTypeIdentifier.appleStandHour.rawValue: (.count(), "standHours", "appleStandHourSamples"),//TODO: handle as category type
             HKQuantityTypeIdentifier.appleStandTime.rawValue: SampleInfo(
-                unit: .minute(),
-                fieldName: "appleStandTime",
+                unit: .second(),fieldName: "appleStandTime",
                 collectionName: "appleStandTimeSamples"),
             HKQuantityTypeIdentifier.vo2Max.rawValue: SampleInfo(
-                unit: HKUnit.liter().unitDivided(by: HKUnit.gram()).unitDivided(
-                    by: HKUnit.minute()).unitMultiplied(by: HKUnit(from: "mL")).unitMultiplied(by: HKUnit(from: "mL")),
-                fieldName: "vo2Max", collectionName: "vo2MaxSamples"),//TODO: confirm correct units
+                unit: HKUnit.literUnit(with: .milli)
+                    .unitDivided(by: HKUnit.gramUnit(with: .kilo))
+                    .unitDivided(by: .minute()), fieldName: "vo2Max", collectionName: "vo2MaxSamples"),//TODO: confirm correct units
             //                   HKQuantityTypeIdentifier.lowCardioFitnessEvent.rawValue: (.count(), "lowCardioFitness", "lowCardioFitnessEventSamples"), //TODO: handle as category type
         ]
     }
