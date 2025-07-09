@@ -54,6 +54,12 @@ actor CompassSpeziAppStandard: Standard,
         for sample in addedSamples {
             if let quantitySample = sample as? HKQuantitySample,
                 let sampleData = sampleInfo[quantitySample.quantityType.identifier] {
+                    // TODO: remove test
+                    guard quantitySample.quantity.is(compatibleWith: sampleData.unit) else {
+                        os_log("Incompatible unit: %{public}@ vs %{public}@",
+                               sampleData.unit, quantitySample.quantityType)
+                        continue
+                    }
                             let value = quantitySample.quantity.doubleValue(for: sampleData.unit)
                             let data: [String: Any] = [
                                 "type": sampleData.fieldName,
