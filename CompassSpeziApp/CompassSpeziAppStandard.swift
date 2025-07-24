@@ -54,19 +54,19 @@ actor CompassSpeziAppStandard: Standard,
         for sample in addedSamples {
             if let quantitySample = sample as? HKQuantitySample,
                 let sampleData = sampleInfo[quantitySample.quantityType.identifier] {
-                    // TODO: remove test
                     guard quantitySample.quantity.is(compatibleWith: sampleData.unit) else {
                         os_log("Incompatible unit: %{public}@ vs %{public}@",
                                sampleData.unit, quantitySample.quantityType)
                         continue
                     }
-                            let value = quantitySample.quantity.doubleValue(for: sampleData.unit)
-                            let data: [String: Any] = [
-                                "type": sampleData.fieldName,
-                                "value": sampleType.id == HKQuantityTypeIdentifier.oxygenSaturation.rawValue ? value : value,
-                                // TODO: also account for mobility percentages
-                                "timestamp": quantitySample.endDate
-                            ]
+                let raw   = quantitySample.quantity.doubleValue(for: sampleData.unit)
+                let value = sampleData.unit == .percent() ? raw * 100.0 : raw
+//                let value = quantitySample.quantity.doubleValue(for: sampleData.unit)
+                let data: [String: Any] = [
+                    "type": sampleData.fieldName,
+                    "value": sampleType.id == HKQuantityTypeIdentifier.oxygenSaturation.rawValue ? value : value,
+                    "timestamp": quantitySample.endDate
+                ]
                 
                 do {
                     try await firestoneDatabase.collection("users")
