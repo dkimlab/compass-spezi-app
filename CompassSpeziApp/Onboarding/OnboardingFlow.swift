@@ -6,7 +6,8 @@
 // SPDX-License-Identifier: MIT
 //
 
-@_spi(TestingSupport) import SpeziAccount
+@_spi(TestingSupport)
+import SpeziAccount
 import SpeziFirebaseAccount
 import SpeziHealthKit
 import SpeziNotifications
@@ -16,12 +17,15 @@ import SwiftUI
 
 /// Displays an multi-step onboarding flow for the CompassSpeziApp.
 struct OnboardingFlow: View {
+    @Environment(Account.self) private var account
+    @Environment(CompassSpeziAppStandard.self) private var standard
     @Environment(HealthKit.self) private var healthKit
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.notificationSettings) private var notificationSettings
 
     @AppStorage(StorageKeys.onboardingFlowComplete) private var completedOnboardingFlow = false
+    
 
     @State private var localNotificationAuthorization = false
     
@@ -56,6 +60,18 @@ struct OnboardingFlow: View {
 //            }
         }
             .interactiveDismissDisabled(!completedOnboardingFlow)
+        //TODO: backfill for 30 days code in progress
+//            .task(id: completedOnboardingFlow) {            // runs whenever the Bool flips
+//                // Run only once, the first time onboarding finishes
+//                guard completedOnboardingFlow, // onboarding finished
+//                      healthKitAuthorization,  // user tapped “Allow” in HK sheet
+//                      let uid = account.user?.uid,  // Spezi’s user
+//                      UserDefaults.standard.object(forKey: "historicalSyncDone") == nil
+//                else { return }
+//
+//                // Kick off the 30‑day back‑fill without blocking the UI
+//                await backfillLast30Days(for: uid)
+//            }
             .onChange(of: scenePhase, initial: true) {
                 guard case .active = scenePhase else {
                     return
