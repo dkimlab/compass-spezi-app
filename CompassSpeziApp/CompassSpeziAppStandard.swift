@@ -72,7 +72,8 @@ actor CompassSpeziAppStandard: Standard,
                     try await firestoneDatabase.collection("users")
                         .document(userId)
                         .collection(sampleData.collectionName)
-                        .addDocument(data: data)
+                        .document(quantitySample.uuid.uuidString) // assign UUID as document ID
+                        .setData(data, merge: true) // overwrite duplicates
                 } catch {
                     print("Failed to upload \(sampleData.collectionName) data: \(error)")
                 }
