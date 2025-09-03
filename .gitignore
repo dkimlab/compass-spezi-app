@@ -46,3 +46,4 @@ firebase-debug.*.log*
 
 # Swift Package List
 CompassSpeziApp/package-list.json
+replacements.txt
