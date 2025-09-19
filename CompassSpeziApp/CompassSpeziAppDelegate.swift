@@ -19,11 +19,17 @@ import SpeziNotifications
 import SpeziOnboarding
 import SpeziScheduler
 import SwiftUI
+import BackgroundTasks
 
 
 class CompassSpeziAppDelegate: SpeziAppDelegate {
+    private let flushTaskId = "com.mica.spezi.compassspeziapp.flush"
+    private let standard = CompassSpeziAppStandard()
+    
+    
+    
     override var configuration: Configuration {
-        Configuration(standard: CompassSpeziAppStandard()) {
+        Configuration(standard: standard) {
             if !FeatureFlags.disableFirebase {
                 AccountConfiguration(
                     service: FirebaseAccountService(providers: [.emailAndPassword], emulatorSettings: accountEmulator),
@@ -31,13 +37,10 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
                     configuration: [
                         .requires(\.userId),
                         .requires(\.name),
-                        
-                        //                        .requires(\.accountId),
-                        
+                                            
                         // additional values stored using the `FirestoreAccountStorage` within our Standard implementation
                         .collects(\.genderIdentity),
                         .collects(\.dateOfBirth),
-//                        .collects(\.compassID) 
                     ]
                 )
 
@@ -53,10 +56,58 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
             CompassSpeziAppScheduler()
             Scheduler()
             OnboardingDataSource()
-
             Notifications()
         }
     }
+    
+    override func application(
+        _ application: UIApplication,
+        willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        // register background processing task, use weak self to prevent retain cycle
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: flushTaskId, using: nil) { [weak self] task in
+            // Try to cast to BGProcessingTask safely
+            guard let self = self, let processingTask = task as? BGProcessingTask else {
+                // If the cast fails, mark the task as completed and return
+                task.setTaskCompleted(success: false)
+                return
+            }
+            
+            self.handleFlushTask(task: processingTask)
+        }
+        scheduleFlushTask()
+        // Apple updated to didFinishLaunchingWithOptions but Spezi specifically uses willFinishLaunchingWithOptions
+        return super.application(application, willFinishLaunchingWithOptions: launchOptions)
+    }
+    
+    // schedules another upload for 6 hours from current time
+    private func scheduleFlushTask() {
+            let request = BGProcessingTaskRequest(identifier: flushTaskId)
+        // need internet connectivity to send data but do not need to be connected to power
+            request.requiresNetworkConnectivity = true
+            request.requiresExternalPower = false
+            request.earliestBeginDate = Date().addingTimeInterval(6 * 60 * 60)
+            do {
+                try BGTaskScheduler.shared.submit(request)
+            } catch {
+                print("Failed to schedule background flush: \(error)")
+            }
+        }
+        
+        private func handleFlushTask(task: BGProcessingTask) {
+            // Reschedule first to keep cadence
+            scheduleFlushTask()
+            
+            let work = _Concurrency.Task {
+                await self.standard.flushNow()
+            }
+            task.expirationHandler = { work.cancel() }
+            
+            _Concurrency.Task {
+                _ = await work.result
+                task.setTaskCompleted(success: !work.isCancelled)
+            }
+        }
 
     private var accountEmulator: (host: String, port: Int)? {
         if FeatureFlags.useFirebaseEmulator {

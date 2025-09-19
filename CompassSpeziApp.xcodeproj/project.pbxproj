@@ -64,22 +64,9 @@
 		653A256728338800005D4D48 /* CompassSpeziAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CompassSpeziAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		A973C10B2D7DC7C600BA148C /* Exceptions for "CompassSpeziApp" folder in "CompassSpeziApp" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Supporting Files/Info.plist",
-			);
-			target = 653A254C283387FE005D4D48 /* CompassSpeziApp */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A973C0E42D7DC7C500BA148C /* CompassSpeziApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				A973C10B2D7DC7C600BA148C /* Exceptions for "CompassSpeziApp" folder in "CompassSpeziApp" target */,
-			);
 			path = CompassSpeziApp;
 			sourceTree = "<group>";
 		};

@@ -22,7 +22,7 @@ extension CompassSpeziAppStandard {
 
         let start = Calendar.current.date(byAdding: .day, value: -30, to: Date())!
         await withTaskGroup(of: Void.self) { group in
-            for (id, info) in sampleInfoDictionary() {
+            for (id, info) in await sampleInfoDictionary() {
                 guard let qType = HKObjectType.quantityType(forIdentifier: .init(rawValue: id)) else { continue }
                 group.addTask { [weak self] in
                     await self?.fetchAndUpload(type: qType, info: info, userId: userId, start: start, end: Date())
@@ -48,6 +48,7 @@ extension CompassSpeziAppStandard {
             guard error == nil, let qSamples = samples as? [HKQuantitySample] else { return }
             Task { await self.uploadBatch(qSamples, with: info, userId: userId) }
         }
+        let healthStore = HKHealthStore()
         healthStore.execute(query)     // `healthStore` property of the actor
     }
 

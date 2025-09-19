@@ -23,8 +23,8 @@ import SwiftUI
 
 struct SampleInfo {
     let unit: HKUnit
-        let fieldName: String
-        let collectionName: String
+    let fieldName: String
+    let collectionName: String
 }
 
 actor CompassSpeziAppStandard: Standard,
@@ -32,6 +32,22 @@ actor CompassSpeziAppStandard: Standard,
                                    HealthKitConstraint,
                                    ConsentConstraint,
                                AccountNotifyConstraint {
+    
+    // batch processing
+    
+    // Buffer element for deferred uploads
+    private struct BufferedSample {
+        let collectionName: String
+        let documentID: String
+        let data: [String: Any]
+    }
+
+
+    // In-memory queue of pending uploads
+    private var pending: [BufferedSample] = []
+    
+
+    
     // Helper function to return the sampleInfo dictionary
     func sampleInfoDictionary() -> [String: SampleInfo] {
         return exerciseMetricsInfo()
@@ -54,11 +70,13 @@ actor CompassSpeziAppStandard: Standard,
         for sample in addedSamples {
             if let quantitySample = sample as? HKQuantitySample,
                 let sampleData = sampleInfo[quantitySample.quantityType.identifier] {
+                
                     guard quantitySample.quantity.is(compatibleWith: sampleData.unit) else {
                         os_log("Incompatible unit: %{public}@ vs %{public}@",
                                sampleData.unit, quantitySample.quantityType)
                         continue
                     }
+                
                 let raw   = quantitySample.quantity.doubleValue(for: sampleData.unit)
                 let value = sampleData.unit == .percent() ? raw * 100.0 : raw
 //                let value = quantitySample.quantity.doubleValue(for: sampleData.unit)
@@ -68,16 +86,57 @@ actor CompassSpeziAppStandard: Standard,
                     "timestamp": quantitySample.endDate
                 ]
                 
-                do {
-                    try await firestoneDatabase.collection("users")
-                        .document(userId)
-                        .collection(sampleData.collectionName)
-                        .document(quantitySample.uuid.uuidString) // assign UUID as document ID
-                        .setData(data, merge: true) // overwrite duplicates
-                } catch {
-                    print("Failed to upload \(sampleData.collectionName) data: \(error)")
-                }
+                // Buffer for later batch upload
+                pending.append(
+                    BufferedSample(
+                        collectionName: sampleData.collectionName,
+                        documentID: quantitySample.uuid.uuidString, // stable doc id
+                        data: data
+                    )
+                )
             }
+        }
+    }
+    
+    // Flush all buffered samples to Firestore using a single batch write
+    func flushNow() async {
+        // Respect feature flag
+        guard !FeatureFlags.disableFirebase else {
+            if !pending.isEmpty {
+                await logger.debug("flushNow: Firebase disabled; dropping \(self.pending.count) buffered samples.")
+                pending.removeAll()
+            }
+            return
+        }
+
+        // Need an authenticated user
+        guard let userId = Auth.auth().currentUser?.uid else {
+            await logger.error("flushNow: no authenticated user; cannot upload.")
+            return
+        }
+
+        guard !pending.isEmpty else {
+            return // no data to upload, nothing to do
+        }
+
+        let db = Firestore.firestore()
+        let batch = db.batch()
+
+        for item in pending {
+            let ref = db.collection("users")
+                .document(userId)
+                .collection(item.collectionName)
+                .document(item.documentID)
+            batch.setData(item.data, forDocument: ref, merge: true)
+        }
+
+        do {
+            try await batch.commit()
+            await logger.debug("Flushed \(self.pending.count) samples to Firestore (batched).")
+            pending.removeAll()
+        } catch {
+            await logger.error("Failed to flush samples: \(error.localizedDescription)")
+            // Keep pending for retry on the next background run
         }
     }
     

@@ -21,8 +21,11 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
-<!--		<string>processing</string>-->
+		<string>processing</string>
 	</array>
-    
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.mica.spezi.compassspeziapp.flush</string>
+    </array>
 </dict>
 </plist>
