@@ -20,6 +20,7 @@ import SpeziOnboarding
 import SpeziScheduler
 import SwiftUI
 import BackgroundTasks
+import struct _Concurrency.Task
 
 
 class CompassSpeziAppDelegate: SpeziAppDelegate {
@@ -73,20 +74,29 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
                 return
             }
             
-            self.handleFlushTask(task: processingTask)
+            self.handleFlushTask(bgTask: processingTask)
         }
-        scheduleFlushTask()
+        Task { @MainActor in
+            scheduleFlushTask()
+        }
+        
         // Apple updated to didFinishLaunchingWithOptions but Spezi specifically uses willFinishLaunchingWithOptions
         return super.application(application, willFinishLaunchingWithOptions: launchOptions)
     }
     
     // schedules another upload for 6 hours from current time
+    @MainActor
     private func scheduleFlushTask() {
+        // prevent duplicate requests
+        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: flushTaskId)
+
+        
             let request = BGProcessingTaskRequest(identifier: flushTaskId)
         // need internet connectivity to send data but do not need to be connected to power
             request.requiresNetworkConnectivity = true
             request.requiresExternalPower = false
             request.earliestBeginDate = Date().addingTimeInterval(6 * 60 * 60)
+        
             do {
                 try BGTaskScheduler.shared.submit(request)
             } catch {
@@ -94,18 +104,31 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
             }
         }
         
-        private func handleFlushTask(task: BGProcessingTask) {
-            // Reschedule first to keep cadence
-            scheduleFlushTask()
-            
-            let work = _Concurrency.Task {
-                await self.standard.flushNow()
+        private func handleFlushTask(bgTask: BGProcessingTask) {
+            // Reschedule first to keep cadence on main
+            Task<Void, Never> { @MainActor @Sendable in
+                self.scheduleFlushTask()
             }
-            task.expirationHandler = { work.cancel() }
             
-            _Concurrency.Task {
-                _ = await work.result
-                task.setTaskCompleted(success: !work.isCancelled)
+            // Capture the actor explicitly so we don't capture `self` in the detached closure.
+            let capturedStandard = self.standard
+            
+            let work = Task<Void, Never>.detached(priority: .background) { @Sendable in
+                await capturedStandard.flushNow()
+            }
+            
+            bgTask.expirationHandler = { [work] in
+                work.cancel()
+            }
+            
+            Task<Void, Never> { [weak self, weak bgTask] in
+                _ = await work.value
+                let success = !work.isCancelled
+
+                await MainActor.run { [weak self, weak bgTask] in
+                    bgTask?.setTaskCompleted(success: success)
+                    self?.scheduleFlushTask()
+                }
             }
         }
 
