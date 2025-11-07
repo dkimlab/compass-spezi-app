@@ -99,23 +99,43 @@ actor CompassSpeziAppStandard: Standard,
     }
     
     // Flush all buffered samples to Firestore using a single batch write
-    func flushNow() async {
+    nonisolated func flushNow() async {
+        await self._flushNowImpl()
+    }
+    
+    // Flush all buffered samples to Firestore using a single batch write
+    func _flushNowImpl() async {
+        precondition(!Thread.isMainThread, "_flushNowImpl unexpectedly on main")
+        // TODO: remove testing log
+        print("[Flush] START \(Date())")
+
         // Respect feature flag
         guard !FeatureFlags.disableFirebase else {
             if !pending.isEmpty {
                 await logger.debug("flushNow: Firebase disabled; dropping \(self.pending.count) buffered samples.")
                 pending.removeAll()
             }
+            // TODO: remove testing log
+            print("[Flush] Firebase disabled — skipping upload, pending=\(pending.count)")
+
             return
         }
 
         // Need an authenticated user
         guard let userId = Auth.auth().currentUser?.uid else {
             await logger.error("flushNow: no authenticated user; cannot upload.")
+            // TODO: remove testing log
+            print("[Flush] ❌ No authenticated user; skipping upload.")
             return
         }
+        
+        // TODO: remove testing log
+        print("[Flush] Current user: \(userId)")
+        print("[Flush] Pending buffer count: \(pending.count)")
 
         guard !pending.isEmpty else {
+            // TODO: remove testing log
+            print("[Flush] Nothing to flush — buffer empty.")
             return // no data to upload, nothing to do
         }
 
@@ -123,21 +143,35 @@ actor CompassSpeziAppStandard: Standard,
         let batch = db.batch()
 
         for item in pending {
+            // TODO: remove testing log
+            print("[Flush] Queuing write for collection=\(item.collectionName) doc=\(item.documentID)")
             let ref = db.collection("users")
                 .document(userId)
                 .collection(item.collectionName)
                 .document(item.documentID)
             batch.setData(item.data, forDocument: ref, merge: true)
         }
+        
+        // TODO: remove testing log
+        print("[Flush] Committing batch with \(pending.count) items …")
+
 
         do {
             try await batch.commit()
+            // TODO: remove testing log
+            print("[Flush] ✅ Batch commit succeeded; removing \(pending.count) items from buffer.")
             await logger.debug("Flushed \(self.pending.count) samples to Firestore (batched).")
             pending.removeAll()
         } catch {
+            // TODO: remove testing log
+            print("[Flush] ❌ Batch commit FAILED: \(error.localizedDescription)")
             await logger.error("Failed to flush samples: \(error.localizedDescription)")
             // Keep pending for retry on the next background run
         }
+        
+        // TODO: remove testing log
+        print("[Flush] END \(Date()) | Remaining pending=\(pending.count)")
+
     }
     
     
