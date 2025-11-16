@@ -45,7 +45,9 @@ actor CompassSpeziAppStandard: Standard,
 
     // In-memory queue of pending uploads
     private var pending: [BufferedSample] = []
-    
+    private let maxBufferedSamples = 1000   // tune as needed
+    private var isFlushing = false
+
 
     
     // Helper function to return the sampleInfo dictionary
@@ -64,7 +66,7 @@ actor CompassSpeziAppStandard: Standard,
         guard let userId = Auth.auth().currentUser?.uid else {
             return
         }
-        let firestoneDatabase = Firestore.firestore()
+        
         let sampleInfo = sampleInfoDictionary()
 
         for sample in addedSamples {
@@ -79,7 +81,7 @@ actor CompassSpeziAppStandard: Standard,
                 
                 let raw   = quantitySample.quantity.doubleValue(for: sampleData.unit)
                 let value = sampleData.unit == .percent() ? raw * 100.0 : raw
-//                let value = quantitySample.quantity.doubleValue(for: sampleData.unit)
+
                 let data: [String: Any] = [
                     "type": sampleData.fieldName,
                     "value": sampleType.id == HKQuantityTypeIdentifier.oxygenSaturation.rawValue ? value : value,
@@ -96,6 +98,19 @@ actor CompassSpeziAppStandard: Standard,
                 )
             }
         }
+        
+        // guard against unbounded growth
+        if pending.count >= maxBufferedSamples, !isFlushing {
+            isFlushing = true
+            Task {
+                await self._flushNowImpl()
+                await self._finishFlush()
+            }
+        }
+    }
+    
+    private func _finishFlush() {
+        isFlushing = false
     }
     
     // Flush all buffered samples to Firestore using a single batch write
