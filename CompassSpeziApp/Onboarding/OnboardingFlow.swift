@@ -55,9 +55,9 @@ struct OnboardingFlow: View {
                 HealthKitPermissions()
             }
             
-//            if !localNotificationAuthorization {
-//                NotificationPermissions()
-//            }
+            if !localNotificationAuthorization {
+                NotificationPermissions()
+            }
         }
             .interactiveDismissDisabled(!completedOnboardingFlow)
         //TODO: backfill for 30 days code in progress

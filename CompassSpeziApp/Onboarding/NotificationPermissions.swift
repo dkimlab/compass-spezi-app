@@ -9,7 +9,63 @@
 import SpeziNotifications
 import SpeziOnboarding
 import SwiftUI
+import UserNotifications
 
+
+private func scheduleOpenAppNotifications() {
+    let center = UNUserNotificationCenter.current()
+
+    // Remove old versions of these notifications if they exist
+    let identifiers = ["open-app-10am", "open-app-8pm"]
+    center.removePendingNotificationRequests(withIdentifiers: identifiers)
+
+    func makeRequest(
+        id: String,
+        title: String,
+        body: String,
+        hour: Int,
+        minute: Int
+    ) -> UNNotificationRequest {
+        var dateComponents = DateComponents()
+        dateComponents.hour = hour
+        dateComponents.minute = minute
+
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: dateComponents,
+            repeats: true
+        )
+
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+
+        return UNNotificationRequest(
+            identifier: id,
+            content: content,
+            trigger: trigger
+        )
+    }
+
+    let morning = makeRequest(
+        id: "open-app-10am",
+        title: "Morning check in",
+        body: "Time to open the app!",
+        hour: 10,
+        minute: 0
+    )
+
+    let evening = makeRequest(
+        id: "open-app-8pm",
+        title: "Evening check-in",
+        body: "Time to open the app!",
+        hour: 21,
+        minute: 40
+    )
+
+    center.add(morning)
+    center.add(evening)
+}
 
 struct NotificationPermissions: View {
     @Environment(OnboardingNavigationPath.self) private var onboardingNavigationPath
@@ -48,6 +104,9 @@ struct NotificationPermissions: View {
                                 try await _Concurrency.Task.sleep(for: .seconds(5))
                             } else {
                                 try await requestNotificationAuthorization(options: [.alert, .sound, .badge])
+                                // twice daily notification to open app
+                                scheduleOpenAppNotifications()
+
                             }
                         } catch {
                             print("Could not request notification permissions.")

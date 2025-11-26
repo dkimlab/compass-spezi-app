@@ -67,6 +67,7 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
             Scheduler()
             OnboardingDataSource()
             Notifications()
+            
         }
     }
     
@@ -416,3 +417,4 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
             return RequestReadAccess(quantity: quantityTypes, category: categoryTypes)
     }
 }
+
