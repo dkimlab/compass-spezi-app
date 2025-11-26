@@ -77,22 +77,6 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
         willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         
-//        BGTaskScheduler.shared.register(
-//               forTaskWithIdentifier: Self.flushTaskId,
-//               using: nil
-//        ) { task in
-//            Task { @MainActor in
-//                // use UIApplication.shared so we don't capture self across executors
-//                guard let appDelegate = UIApplication.shared.delegate as? CompassSpeziAppDelegate else {
-//                    task.setTaskCompleted(success: false)
-//                    return
-//                }
-////                appDelegate.handleFlushTask(task)
-//            }
-//        }
-        
-//        // Use static rescheduler
-//        Self.scheduleFlushTask()
         
         // Call super (Spezi loads modules here)
         let speziSetup = super.application(application, willFinishLaunchingWithOptions: launchOptions)
@@ -126,7 +110,6 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
                 await self.standard.flushNow()
                 print("[FGFlush] ✅ Foreground flush finished")
 
-//                await MainActor.run { CompassSpeziAppDelegate.scheduleFlushTask() } // reschedule after flush
             }
         }
         
@@ -134,99 +117,6 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
         return speziSetup
     }
 
-//    @MainActor
-//    private func handleFlushTask(_ task: BGTask) {
-//        print("[BGFlush] 🚀 BGTask invoked by iOS at \(Date())")   // TODO remove debug log
-//        
-//        guard let processingTask = task as? BGProcessingTask else {
-//            task.setTaskCompleted(success: false)
-//            return
-//        }
-//        
-//        // Store a reference to the async work to cancel on expiration.
-//        var work: Task<Bool, Never>?
-//        
-//        // Configure expiration to cancel the work. (No main-actor hop needed to cancel.)
-//        processingTask.expirationHandler = {
-//           print("[BGFlush] ⚠️ Expiration — cancelling work")
-//           work?.cancel()
-//        }
-//        
-//            
-//        work = Task.detached(priority: .background) {
-//            print("[BGFlush] Detached work started")
-//            let pair: (CompassSpeziAppStandard, FlushGate)? = await MainActor.run {
-//                print("[BGFlush] Getting appDelegate.standard/flushGate on MainActor")
-//                guard let appDelegate = UIApplication.shared.delegate as? CompassSpeziAppDelegate else {
-//                    return nil
-//                }
-//                return (appDelegate.standard, appDelegate.flushGate)
-//            }
-//
-//            guard let (standard, flushGate) = pair else {
-//                return false
-//            }
-//
-//            return await CompassSpeziAppDelegate.runFlushTask(
-//                standard: standard,
-//                flushGate: flushGate
-//            )
-//
-//        }
-//        
-//        let workCopy = work
-//
-//        Task { @MainActor in
-//            print("[BGFlush] Awaiting work.value on MainActor …")
-//            let success = await workCopy?.value ?? false
-//            print("[BGFlush] work.value resolved: \(success)")
-//            processingTask.setTaskCompleted(success: success)
-//            CompassSpeziAppDelegate.scheduleFlushTask()
-//        }
-//    }
-//
-//    
-//    // Non-Main entry point for the BGProcessingTask work.
-//    private static func runFlushTask(
-//        standard: CompassSpeziAppStandard,
-//        flushGate: FlushGate
-//    ) async -> Bool {
-//        precondition(!Thread.isMainThread, "runFlushTask unexpectedly on main")
-//        print("[BGFlush] runFlushTask entered")
-//        let started = await flushGate.begin()
-//        guard started else {
-//            print("[BGFlush] Another flush in progress — skipping")
-//            return true
-//        }
-//    
-//        print("[BGFlush] Calling standard.flushNow() ...")
-//        await standard.flushNow()
-//        print("[BGFlush] standard.flushNow() finished")
-//        
-// 
-//        await flushGate.end()
-//        print("[BGFlush] runFlushTask exiting true")
-//        return true
-//     }
-//    
-//    // schedules another upload for 6 hours from current time
-//    @MainActor
-//    private static func scheduleFlushTask() {
-//        print("ScheduleFlushTask called")
-//        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.flushTaskId)
-//        let request = BGProcessingTaskRequest(identifier: Self.flushTaskId)
-//        request.requiresNetworkConnectivity = true
-//        request.requiresExternalPower = false
-//        //TODO: change back to 6*60*60 to get every 6hrs, changed to 15min for testing 60 * 5
-//        request.earliestBeginDate = Date().addingTimeInterval(60 * 5)
-//        do {
-//            try BGTaskScheduler.shared.submit(request)
-//        } catch {
-//            print("Failed to schedule background flush: \(error)")
-//        }
-//        print("ScheduleFlushTask finished")
-//    }
-//        
 
     private var accountEmulator: (host: String, port: Int)? {
         if FeatureFlags.useFirebaseEmulator {
