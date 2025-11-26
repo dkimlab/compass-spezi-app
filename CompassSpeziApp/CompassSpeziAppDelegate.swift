@@ -109,6 +109,8 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
                 print("[FGFlush] ▶️ App became active — flushing now")
                 await self.standard.flushNow()
                 print("[FGFlush] ✅ Foreground flush finished")
+                UserDefaults.standard.set(Date(), forKey: "lastUploadTime")
+                print("[FGFlush] ✅ Foreground flush finished and timestamp saved")
 
             }
         }

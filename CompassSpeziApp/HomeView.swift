@@ -20,13 +20,17 @@ struct HomeView: View {
     @AppStorage(StorageKeys.homeTabSelection) private var selectedTab = Tabs.schedule
     @AppStorage(StorageKeys.tabViewCustomization) private var tabViewCustomization = TabViewCustomization()
 
+
     @State private var presentingAccount = false
 
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            Tab("Schedule", systemImage: "list.clipboard", value: .schedule) {
-                ScheduleView(presentingAccount: $presentingAccount)
+            Tab("Home", systemImage: "list.clipboard", value: .schedule) {
+                VStack(alignment: .leading, spacing: 8) {
+                    ScheduleView(presentingAccount: $presentingAccount)
+                }
+                .padding(.horizontal)
             }
                 .customizationID("home.schedule")
 //            Tab("Contacts", systemImage: "person.fill", value: .contact) {
@@ -43,6 +47,7 @@ struct HomeView: View {
                 AccountSheet()
             }
     }
+
 }
 
 

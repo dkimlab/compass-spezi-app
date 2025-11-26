@@ -20,6 +20,8 @@ struct ScheduleView: View {
     @State private var presentedEvent: Event?
     @Binding private var presentingAccount: Bool
 
+    @AppStorage("lastUploadTime") private var lastUpload: Date = .distantPast
+
     
     var body: some View {
 //        @Bindable var scheduler = scheduler
@@ -60,6 +62,15 @@ struct ScheduleView: View {
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
+                if lastUpload == .distantPast {
+                    Text("Last uploaded: —")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Last uploaded: \(formatted(date: lastUpload))")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .toolbar {
@@ -68,6 +79,14 @@ struct ScheduleView: View {
                 }
             }
         }
+        
+    }
+    
+    private func formatted(date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
     
     
