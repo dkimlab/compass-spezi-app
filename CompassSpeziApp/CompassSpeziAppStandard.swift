@@ -45,6 +45,9 @@ actor CompassSpeziAppStandard: Standard,
 
     // In-memory queue of pending uploads
     private var pending: [BufferedSample] = []
+    // Normal flush trigger: upload when this many buffered samples are saved.
+    private let flushThreshold = 100
+    // hard safety cap to prevent unbounded growth
     private let maxBufferedSamples = 1000   // tune as needed
     private var isFlushing = false
 
@@ -96,6 +99,15 @@ actor CompassSpeziAppStandard: Standard,
                         data: data
                     )
                 )
+            }
+        }
+        
+        // Flush whenever we reach the threshold number of buffered samples.
+        if pending.count >= flushThreshold, !isFlushing {
+            isFlushing = true
+            Task {
+                await self._flushNowImpl()
+                await self._finishFlush()
             }
         }
         
