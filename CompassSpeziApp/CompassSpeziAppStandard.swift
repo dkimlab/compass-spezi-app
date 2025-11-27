@@ -48,7 +48,7 @@ actor CompassSpeziAppStandard: Standard,
     // Normal flush trigger: upload when this many buffered samples are saved.
     private let flushThreshold = 100
     // hard safety cap to prevent unbounded growth
-    private let maxBufferedSamples = 1000   // tune as needed
+    private let maxBufferedSamples = 2000   // tune as needed
     private var isFlushing = false
 
 
@@ -104,30 +104,61 @@ actor CompassSpeziAppStandard: Standard,
         
         // Flush whenever we reach the threshold number of buffered samples.
         if pending.count >= flushThreshold, !isFlushing {
-            isFlushing = true
             Task {
+                let started = await self.beginFlushIfNeeded()
+                guard started else {
+                    print("[ThresholdFlush] ⏳ Skipping — a flush is already in progress")
+                    return
+                }
+
+                print("[ThresholdFlush] ▶️ Reached \(self.pending.count) pending samples — flushing")
                 await self._flushNowImpl()
-                await self._finishFlush()
+                await self.endFlush()
             }
         }
         
         // guard against unbounded growth
         if pending.count >= maxBufferedSamples, !isFlushing {
-            isFlushing = true
             Task {
+                let started = await self.beginFlushIfNeeded()
+                guard started else {
+                    print("[ThresholdFlushSafety] ⏳ Skipping — a flush is already in progress")
+                    return
+                }
+
+                print("[ThresholdFlushSafety] ▶️ Max buffer reached (\(self.pending.count)) — flushing")
                 await self._flushNowImpl()
-                await self._finishFlush()
+                await self.endFlush()
             }
         }
     }
     
-    private func _finishFlush() {
+    /// Returns the number of pending buffered samples.
+    func pendingCount() -> Int {
+        return pending.count
+    }
+    
+    private func beginFlushIfNeeded() -> Bool {
+        guard !isFlushing else { return false }
+        isFlushing = true
+        return true
+    }
+
+    private func endFlush() {
         isFlushing = false
     }
     
     // Flush all buffered samples to Firestore using a single batch write
     nonisolated func flushNow() async {
+        // Hop into the actor to check/update state.
+        let started = await self.beginFlushIfNeeded()
+        guard started else {
+            print("[Flush] ⏳ flushNow skipped — a flush is already in progress")
+            return
+        }
+
         await self._flushNowImpl()
+        await self.endFlush()
     }
     
     // Flush all buffered samples to Firestore using a single batch write

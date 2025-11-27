@@ -28,7 +28,7 @@ import FirebaseCore
 class CompassSpeziAppDelegate: SpeziAppDelegate {
 //    private static let flushTaskId = "com.mica.spezi.compassspeziapp.flush"
     private let standard = CompassSpeziAppStandard()
-    private let flushGate = FlushGate()
+//    private let flushGate = FlushGate()
     
     
     override var configuration: Configuration {
@@ -97,22 +97,29 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
+//            Task {
+//                // Try to start; skip if a BG/FG flush is already running
+//                let started = await self.flushGate.begin()
+//                guard started else {
+//                    print("[FGFlush] ⏳ Skipping — a flush is already in progress")
+//                    return
+//                }
+//                defer { Task { await self.flushGate.end() } }
+//
+//                print("[FGFlush] ▶️ App became active — flushing now")
+//                await self.standard.flushNow()
+//                print("[FGFlush] ✅ Foreground flush finished")
+//                UserDefaults.standard.set(Date(), forKey: "lastUploadTime")
+//                print("[FGFlush] ✅ Foreground flush finished and timestamp saved")
+//
+//            }
             Task {
-                // Try to start; skip if a BG/FG flush is already running
-                let started = await self.flushGate.begin()
-                guard started else {
-                    print("[FGFlush] ⏳ Skipping — a flush is already in progress")
-                    return
+                    print("[FGFlush] ▶️ App became active — flushing now")
+                    await self.standard.flushNow()
+                    print("[FGFlush] ✅ Foreground flush finished")
+                    UserDefaults.standard.set(Date(), forKey: "lastUploadTime")
+                    print("[FGFlush] ✅ Foreground flush finished and timestamp saved")
                 }
-                defer { Task { await self.flushGate.end() } }
-
-                print("[FGFlush] ▶️ App became active — flushing now")
-                await self.standard.flushNow()
-                print("[FGFlush] ✅ Foreground flush finished")
-                UserDefaults.standard.set(Date(), forKey: "lastUploadTime")
-                print("[FGFlush] ✅ Foreground flush finished and timestamp saved")
-
-            }
         }
         
         // Apple updated to didFinishLaunchingWithOptions but Spezi specifically uses willFinishLaunchingWithOptions
@@ -129,22 +136,22 @@ class CompassSpeziAppDelegate: SpeziAppDelegate {
     }
     
     
-    // Prevents overlapping flushes across foreground + background.
-    actor FlushGate {
-        private var inProgress = false
-
-        /// Try to begin a flush. Returns false if one is already running.
-        func begin() -> Bool {
-            guard !inProgress else { return false }
-            inProgress = true
-            return true
-        }
-
-        /// Mark the current flush as finished.
-        func end() {
-            inProgress = false
-        }
-    }
+//    // Prevents overlapping flushes across foreground + background.
+//    actor FlushGate {
+//        private var inProgress = false
+//
+//        /// Try to begin a flush. Returns false if one is already running.
+//        func begin() -> Bool {
+//            guard !inProgress else { return false }
+//            inProgress = true
+//            return true
+//        }
+//
+//        /// Mark the current flush as finished.
+//        func end() {
+//            inProgress = false
+//        }
+//    }
 
     
     

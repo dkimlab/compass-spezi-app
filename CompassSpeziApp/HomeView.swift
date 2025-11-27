@@ -22,6 +22,10 @@ struct HomeView: View {
 
 
     @State private var presentingAccount = false
+    
+    // variables to show number of buffered samples
+    @State private var bufferedSampleCount: Int = 0
+    @Environment(CompassSpeziAppStandard.self) private var standard
 
     
     var body: some View {
@@ -29,6 +33,10 @@ struct HomeView: View {
             Tab("Home", systemImage: "list.clipboard", value: .schedule) {
                 VStack(alignment: .leading, spacing: 8) {
                     ScheduleView(presentingAccount: $presentingAccount)
+                    Text("Buffered samples: \(bufferedSampleCount)")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
                 }
                 .padding(.horizontal)
             }
@@ -45,6 +53,12 @@ struct HomeView: View {
             }
             .accountRequired(!FeatureFlags.disableFirebase && !FeatureFlags.skipOnboarding) {
                 AccountSheet()
+            }
+            .task {
+                while true {
+                    bufferedSampleCount = await standard.pendingCount()
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                }
             }
     }
 
