@@ -51,7 +51,7 @@ private func scheduleOpenAppNotifications() {
         id: "open-app-10am",
         title: "Morning check in",
         body: "Time to open the app!",
-        hour: 10,
+        hour: 8,
         minute: 0
     )
 
@@ -59,8 +59,8 @@ private func scheduleOpenAppNotifications() {
         id: "open-app-8pm",
         title: "Evening check-in",
         body: "Time to open the app!",
-        hour: 21,
-        minute: 40
+        hour: 18,
+        minute: 0
     )
 
     center.add(morning)
